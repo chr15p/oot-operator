@@ -53,11 +53,13 @@ var _ = Describe("MakeJob", func() {
 	}
 
 	DescribeTable("should set fields correctly", func(buildSecrets []v1.LocalObjectReference, imagePullSecret *v1.LocalObjectReference) {
+		nodeSelector := map[string]string{"arch": "x64"}
 
 		km := ootov1alpha1.KernelMapping{
 			Build: &ootov1alpha1.Build{
-				BuildArgs:  buildArgs,
-				Dockerfile: dockerfile,
+				BuildArgs:    buildArgs,
+				Dockerfile:   dockerfile,
+				NodeSelector: nodeSelector,
 			},
 			ContainerImage: containerImage,
 		}
@@ -105,6 +107,7 @@ var _ = Describe("MakeJob", func() {
 								},
 							},
 						},
+						NodeSelector:  nodeSelector,
 						RestartPolicy: v1.RestartPolicyOnFailure,
 						Volumes: []v1.Volume{
 							{
@@ -129,8 +132,7 @@ var _ = Describe("MakeJob", func() {
 		}
 
 		if imagePullSecret != nil {
-
-			mod.Spec.ImagePullSecret = imagePullSecret
+			mod.Spec.DriverContainer.ImageRepoSecret = imagePullSecret
 
 			expected.Spec.Template.Spec.Containers[0].VolumeMounts =
 				append(expected.Spec.Template.Spec.Containers[0].VolumeMounts,

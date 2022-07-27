@@ -80,9 +80,9 @@ func (m *maker) MakeJob(mod ootov1alpha1.Module, buildConfig *ootov1alpha1.Build
 
 	volumes := []v1.Volume{dockerFileVolume}
 	volumeMounts := []v1.VolumeMount{dockerFileVolumeMount}
-	if mod.Spec.ImagePullSecret != nil {
-		volumes = append(volumes, makeImagePullSecretVolume(mod.Spec.ImagePullSecret))
-		volumeMounts = append(volumeMounts, makeImagePullSecretVolumeMount(mod.Spec.ImagePullSecret))
+	if irs := mod.Spec.DriverContainer.ImageRepoSecret; irs != nil {
+		volumes = append(volumes, makeImagePullSecretVolume(irs))
+		volumeMounts = append(volumeMounts, makeImagePullSecretVolumeMount(irs))
 	}
 	volumes = append(volumes, makeBuildSecretVolumes(buildConfig.Secrets)...)
 	volumeMounts = append(volumeMounts, makeBuildSecretVolumeMounts(buildConfig.Secrets)...)
@@ -108,6 +108,7 @@ func (m *maker) MakeJob(mod ootov1alpha1.Module, buildConfig *ootov1alpha1.Build
 							VolumeMounts: volumeMounts,
 						},
 					},
+					NodeSelector:  buildConfig.NodeSelector,
 					RestartPolicy: v1.RestartPolicyOnFailure,
 					Volumes:       volumes,
 				},

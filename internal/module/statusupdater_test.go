@@ -49,7 +49,7 @@ var _ = Describe("status update", func() {
 	DescribeTable("checking status updater based on module",
 		func(mappingsNodes []v1.Node, targetedNodes []v1.Node, dsMap map[string]*appsv1.DaemonSet, devicePluginPresent bool) {
 			if devicePluginPresent {
-				mod.Spec.DevicePlugin = &v1.Container{}
+				mod.Spec.DevicePlugin = &ootov1alpha1.DevicePluginSpec{}
 			}
 			var driverContainerAvailable int32
 			var devicePluginAvailable int32

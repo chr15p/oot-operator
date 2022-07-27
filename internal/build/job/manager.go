@@ -69,9 +69,9 @@ func (jbm *jobManager) Sync(ctx context.Context, mod ootov1alpha1.Module, m ooto
 
 	var registryAuthGetter auth.RegistryAuthGetter
 
-	if mod.Spec.ImagePullSecret != nil {
+	if irs := mod.Spec.DriverContainer.ImageRepoSecret; irs != nil {
 		namespacedName := types.NamespacedName{
-			Name:      mod.Spec.ImagePullSecret.Name,
+			Name:      irs.Name,
 			Namespace: mod.Namespace,
 		}
 		registryAuthGetter = auth.NewRegistryAuthGetter(jbm.client, namespacedName)

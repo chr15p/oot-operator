@@ -203,8 +203,12 @@ var _ = Describe("ModuleReconciler", func() {
 					Namespace: namespace,
 				},
 				Spec: ootov1alpha1.ModuleSpec{
-					KernelMappings: mappings,
-					Selector:       map[string]string{"key": "value"},
+					DriverContainer: ootov1alpha1.DriverContainerSpec{
+						Container: ootov1alpha1.DriverContainerContainerSpec{
+							KernelMappings: mappings,
+						},
+					},
+					Selector: map[string]string{"key": "value"},
 				},
 			}
 
@@ -293,8 +297,12 @@ var _ = Describe("ModuleReconciler", func() {
 					Namespace: namespace,
 				},
 				Spec: ootov1alpha1.ModuleSpec{
-					KernelMappings: mappings,
-					Selector:       nodeLabels,
+					DriverContainer: ootov1alpha1.DriverContainerSpec{
+						Container: ootov1alpha1.DriverContainerContainerSpec{
+							KernelMappings: mappings,
+						},
+					},
+					Selector: nodeLabels,
 				},
 			}
 
@@ -390,9 +398,13 @@ var _ = Describe("ModuleReconciler", func() {
 					Namespace: namespace,
 				},
 				Spec: ootov1alpha1.ModuleSpec{
-					DevicePlugin:   &v1.Container{},
-					KernelMappings: mappings,
-					Selector:       map[string]string{"key": "value"},
+					DevicePlugin: &ootov1alpha1.DevicePluginSpec{},
+					DriverContainer: ootov1alpha1.DriverContainerSpec{
+						Container: ootov1alpha1.DriverContainerContainerSpec{
+							KernelMappings: mappings,
+						},
+					},
+					Selector: map[string]string{"key": "value"},
 				},
 			}
 

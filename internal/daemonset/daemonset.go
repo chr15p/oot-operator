@@ -114,45 +114,7 @@ func (dc *daemonSetGenerator) SetDriverContainerAsDesired(ctx context.Context, d
 	nodeSelector := CopyMapStringString(mod.Spec.Selector)
 	nodeSelector[dc.kernelLabel] = kernelVersion
 
-	driverContainerVolumeMounts := []v1.VolumeMount{
-		{
-			Name:      nodeLibModulesVolumeName,
-			ReadOnly:  true,
-			MountPath: nodeLibModulesPath,
-		},
-		{
-			Name:      nodeUsrLibModulesVolumeName,
-			ReadOnly:  true,
-			MountPath: nodeUsrLibModulesPath,
-		},
-	}
-
 	hostPathDirectory := v1.HostPathDirectory
-	volumes := []v1.Volume{
-		{
-			Name: nodeLibModulesVolumeName,
-			VolumeSource: v1.VolumeSource{
-				HostPath: &v1.HostPathVolumeSource{
-					Path: nodeLibModulesPath,
-					Type: &hostPathDirectory,
-				},
-			},
-		},
-		{
-			Name: nodeUsrLibModulesVolumeName,
-			VolumeSource: v1.VolumeSource{
-				HostPath: &v1.HostPathVolumeSource{
-					Path: nodeUsrLibModulesPath,
-					Type: &hostPathDirectory,
-				},
-			},
-		},
-	}
-
-	container := mod.Spec.DriverContainer
-	container.Name = "driver-container"
-	container.Image = image
-	container.VolumeMounts = append(container.VolumeMounts, driverContainerVolumeMounts...)
 
 	ds.Spec = appsv1.DaemonSetSpec{
 		Template: v1.PodTemplateSpec{
@@ -161,11 +123,65 @@ func (dc *daemonSetGenerator) SetDriverContainerAsDesired(ctx context.Context, d
 				Finalizers: []string{constants.NodeLabelerFinalizer},
 			},
 			Spec: v1.PodSpec{
-				Containers:         []v1.Container{container},
-				ImagePullSecrets:   GetPodPullSecrets(mod),
+				Containers: []v1.Container{
+					{
+						Command: []string{"sleep", "infinity"},
+						Name:    "driver-container",
+						Image:   image,
+						Lifecycle: &v1.Lifecycle{
+							PostStart: &v1.LifecycleHandler{
+								Exec: &v1.ExecAction{
+									Command: MakeLoadCommand(mod.Spec.DriverContainer.Container.Modprobe),
+								},
+							},
+							PreStop: &v1.LifecycleHandler{
+								Exec: &v1.ExecAction{
+									Command: MakeUnloadCommand(mod.Spec.DriverContainer.Container.Modprobe),
+								},
+							},
+						},
+						SecurityContext: &v1.SecurityContext{
+							Capabilities: &v1.Capabilities{
+								Add: []v1.Capability{"SYS_MODULE"},
+							},
+						},
+						VolumeMounts: []v1.VolumeMount{
+							{
+								Name:      nodeLibModulesVolumeName,
+								ReadOnly:  true,
+								MountPath: nodeLibModulesPath,
+							},
+							{
+								Name:      nodeUsrLibModulesVolumeName,
+								ReadOnly:  true,
+								MountPath: nodeUsrLibModulesPath,
+							},
+						},
+					},
+				},
+				ImagePullSecrets:   GetPodPullSecrets(mod.Spec.DriverContainer.ImageRepoSecret),
 				NodeSelector:       nodeSelector,
-				ServiceAccountName: mod.Spec.ServiceAccountName,
-				Volumes:            append(volumes, mod.Spec.AdditionalVolumes...),
+				ServiceAccountName: mod.Spec.DriverContainer.ServiceAccountName,
+				Volumes: []v1.Volume{
+					{
+						Name: nodeLibModulesVolumeName,
+						VolumeSource: v1.VolumeSource{
+							HostPath: &v1.HostPathVolumeSource{
+								Path: nodeLibModulesPath,
+								Type: &hostPathDirectory,
+							},
+						},
+					},
+					{
+						Name: nodeUsrLibModulesVolumeName,
+						VolumeSource: v1.VolumeSource{
+							HostPath: &v1.HostPathVolumeSource{
+								Path: nodeUsrLibModulesPath,
+								Type: &hostPathDirectory,
+							},
+						},
+					},
+				},
 			},
 		},
 		Selector: &metav1.LabelSelector{MatchLabels: standardLabels},
@@ -208,16 +224,6 @@ func (dc *daemonSetGenerator) SetDevicePluginAsDesired(ctx context.Context, ds *
 		OverrideLabels(ds.GetLabels(), standardLabels),
 	)
 
-	container := *mod.Spec.DevicePlugin
-	container.Name = "device-plugin"
-	container.VolumeMounts = append(container.VolumeMounts, containerVolumeMounts...)
-
-	if container.SecurityContext == nil {
-		container.SecurityContext = &v1.SecurityContext{}
-	}
-
-	container.SecurityContext.Privileged = pointer.Bool(true)
-
 	ds.Spec = appsv1.DaemonSetSpec{
 		Selector: &metav1.LabelSelector{MatchLabels: standardLabels},
 		Template: v1.PodTemplateSpec{
@@ -226,11 +232,18 @@ func (dc *daemonSetGenerator) SetDevicePluginAsDesired(ctx context.Context, ds *
 				Finalizers: []string{constants.NodeLabelerFinalizer},
 			},
 			Spec: v1.PodSpec{
-				Containers:         []v1.Container{container},
-				ImagePullSecrets:   GetPodPullSecrets(*mod),
+				Containers: []v1.Container{
+					{
+						Name:            "device-plugin",
+						Image:           mod.Spec.DevicePlugin.Container.Image,
+						SecurityContext: &v1.SecurityContext{Privileged: pointer.Bool(true)},
+						VolumeMounts:    append(mod.Spec.DevicePlugin.Container.VolumeMounts, containerVolumeMounts...),
+					},
+				},
+				ImagePullSecrets:   mod.Spec.DevicePlugin.ImagePullSecrets,
 				NodeSelector:       map[string]string{getDriverContainerNodeLabel(mod.Name): ""},
-				ServiceAccountName: mod.Spec.ServiceAccountName,
-				Volumes:            append([]v1.Volume{devicePluginVolume}, mod.Spec.AdditionalVolumes...),
+				ServiceAccountName: mod.Spec.DevicePlugin.ServiceAccountName,
+				Volumes:            append([]v1.Volume{devicePluginVolume}, mod.Spec.DevicePlugin.Volumes...),
 			},
 		},
 	}
@@ -289,14 +302,12 @@ func GetDevicePluginKernelVersion() string {
 	return devicePluginKernelVersion
 }
 
-func GetPodPullSecrets(mod ootov1alpha1.Module) []v1.LocalObjectReference {
-	var pullSecrets []v1.LocalObjectReference
-
-	if ips := mod.Spec.ImagePullSecret; ips != nil {
-		pullSecrets = []v1.LocalObjectReference{*ips}
+func GetPodPullSecrets(secret *v1.LocalObjectReference) []v1.LocalObjectReference {
+	if secret == nil {
+		return nil
 	}
 
-	return pullSecrets
+	return []v1.LocalObjectReference{*secret}
 }
 
 func OverrideLabels(labels, overrides map[string]string) map[string]string {
@@ -309,4 +320,45 @@ func OverrideLabels(labels, overrides map[string]string) map[string]string {
 	}
 
 	return labels
+}
+
+func MakeLoadCommand(spec ootov1alpha1.ModprobeSpec) []string {
+	loadCommand := []string{"modprobe"}
+
+	if ra := spec.RawArgs; ra != nil && len(ra.Load) > 0 {
+		return append(loadCommand, ra.Load...)
+	}
+
+	if a := spec.Args; a != nil && len(a.Load) > 0 {
+		loadCommand = append(loadCommand, a.Load...)
+	} else {
+		loadCommand = append(loadCommand, "-v")
+	}
+
+	if dirName := spec.DirName; dirName != "" {
+		loadCommand = append(loadCommand, "-b", dirName)
+	}
+
+	loadCommand = append(loadCommand, spec.ModuleName)
+	return append(loadCommand, spec.Parameters...)
+}
+
+func MakeUnloadCommand(spec ootov1alpha1.ModprobeSpec) []string {
+	unloadCommand := []string{"modprobe"}
+
+	if ra := spec.RawArgs; ra != nil && len(ra.Load) > 0 {
+		return append(unloadCommand, ra.Load...)
+	}
+
+	if a := spec.Args; a != nil && len(a.Unload) > 0 {
+		unloadCommand = append(unloadCommand, a.Unload...)
+	} else {
+		unloadCommand = append(unloadCommand, "-rv")
+	}
+
+	if dirName := spec.DirName; dirName != "" {
+		unloadCommand = append(unloadCommand, "-b", dirName)
+	}
+
+	return append(unloadCommand, spec.ModuleName)
 }

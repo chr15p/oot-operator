@@ -212,7 +212,7 @@ var _ = Describe("JobManager", func() {
 				},
 			}
 
-			mod.Spec.ImagePullSecret = &v1.LocalObjectReference{
+			mod.Spec.DriverContainer.ImageRepoSecret = &v1.LocalObjectReference{
 				Name: "pull-push-secret",
 			}
 
