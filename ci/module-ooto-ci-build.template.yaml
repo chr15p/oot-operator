@@ -6,6 +6,9 @@ metadata:
 spec:
   driverContainer:
     name: overwritten-anyway
+    container:
+      modprobe:
+        moduleName: ooto_ci_a
     command:
       - sh
       - -c
@@ -16,16 +19,6 @@ spec:
         echo "kernel version: $(cat /kernel-version)"
         echo "default value: $(cat /default-value)"
         sleep infinity
-    lifecycle:
-      postStart:
-        exec:
-          command: [modprobe, -vd, /opt, ooto_ci_a]
-      preStop:
-        exec:
-          command: [modprobe, -rvd, /opt, ooto_ci_a]
-    securityContext:
-      capabilities:
-        add: [SYS_MODULE]
   kernelMappings:
     - literal: KVER_CHANGEME
       containerImage: registry.minikube/ooto-kmod:local
@@ -46,7 +39,7 @@ spec:
           ARG KERNEL_VERSION
           ARG WITH_DEFAULT_VALUE=default-value
 
-          RUN cat /run/secrets/build-secret/ci-build-secret > /ci-build-secret          
+          RUN cat /run/secrets/build-secret/ci-build-secret > /ci-build-secret
           RUN echo $CI_BUILD_ARG > /build-arg
           RUN echo $KERNEL_VERSION > /kernel-version
           RUN echo $WITH_DEFAULT_VALUE > /default-value

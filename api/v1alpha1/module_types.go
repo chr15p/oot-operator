@@ -95,11 +95,11 @@ type KernelMapping struct {
 
 type ModprobeArgs struct {
 	// Load is an optional list of arguments to be used when loading the kernel module.
-	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MinItems=1
 	Load []string `json:"load,omitempty"`
 
 	// Unload is an optional list of arguments to be used when unloading the kernel module.
-	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MinItems=1
 	Unload []string `json:"unload,omitempty"`
 }
 
@@ -133,10 +133,18 @@ type DriverContainerContainerSpec struct {
 	// +optional
 	ContainerImage string `json:"containerImage,omitempty"`
 
+	// Image pull policy.
+	// One of Always, Never, IfNotPresent.
+	// Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+	// Cannot be updated.
+	// More info: https://kubernetes.io/docs/concepts/containers/images#updating-images
+	// +optional
+	ImagePullPolicy v1.PullPolicy `json:"imagePullPolicy,omitempty" protobuf:"bytes,14,opt,name=imagePullPolicy,casttype=PullPolicy"`
+
 	// KernelMappings is a list of kernel mappings.
 	// When a node's labels match Selector, then the OOT Operator will look for the first mapping that matches its
 	// kernel version, and use the corresponding container image to run the DriverContainer.
-	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MinItems=1
 	KernelMappings []KernelMapping `json:"kernelMappings"`
 
 	// Modprobe is a set of properties to customize which module modprobe loads and with which properties.

@@ -125,9 +125,10 @@ func (dc *daemonSetGenerator) SetDriverContainerAsDesired(ctx context.Context, d
 			Spec: v1.PodSpec{
 				Containers: []v1.Container{
 					{
-						Command: []string{"sleep", "infinity"},
-						Name:    "driver-container",
-						Image:   image,
+						Command:         []string{"sleep", "infinity"},
+						Name:            "driver-container",
+						Image:           image,
+						ImagePullPolicy: mod.Spec.DriverContainer.Container.ImagePullPolicy,
 						Lifecycle: &v1.Lifecycle{
 							PostStart: &v1.LifecycleHandler{
 								Exec: &v1.ExecAction{

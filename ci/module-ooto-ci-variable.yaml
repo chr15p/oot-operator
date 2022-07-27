@@ -5,19 +5,10 @@ metadata:
   name: ooto-ci
 spec:
   driverContainer:
-    name: overwritten-anyway
-    command: [sleep, infinity]
-    imagePullPolicy: Never
-    lifecycle:
-      postStart:
-        exec:
-          command: [modprobe, -vd, /opt, ooto_ci_a]
-      preStop:
-        exec:
-          command: [modprobe, -rvd, /opt, ooto_ci_a]
-    securityContext:
-      capabilities:
-        add: [SYS_MODULE]
+    container:
+      modprobe:
+        moduleName: ooto_ci_a
+      imagePullPolicy: Never
   kernelMappings:
     - regexp: '^.+$'
       containerImage: ooto-kmod:$KERNEL_FULL_VERSION
