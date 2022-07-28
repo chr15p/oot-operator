@@ -9,8 +9,8 @@ spec:
       modprobe:
         moduleName: KMOD_CHANGEME
       imagePullPolicy: Never
-  kernelMappings:
-    - literal: KVER_CHANGEME
-      containerImage: ooto-kmod:local
+      kernelMappings:
+        - literal: KVER_CHANGEME
+          containerImage: ooto-kmod:local
   selector:
     wants-oot-module: KMOD_CHANGEME

@@ -9,8 +9,8 @@ spec:
       modprobe:
         moduleName: ooto_ci_a
       imagePullPolicy: Never
-  kernelMappings:
-    - regexp: '^.+$'
-      containerImage: ooto-kmod:$KERNEL_FULL_VERSION
+      kernelMappings:
+        - regexp: '^.+$'
+          containerImage: ooto-kmod:$KERNEL_FULL_VERSION
   selector:
     kubernetes.io/hostname: minikube
