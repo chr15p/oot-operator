@@ -780,7 +780,7 @@ var _ = Describe("MakeLoadCommand", func() {
 		Expect(
 			MakeLoadCommand(spec),
 		).To(
-			Equal([]string{"modprobe", "-v", "-b", dir, moduleName, arg1, arg2}),
+			Equal([]string{"modprobe", "-v", "-d", dir, moduleName, arg1, arg2}),
 		)
 	})
 
@@ -829,7 +829,7 @@ var _ = Describe("MakeUnloadCommand", func() {
 		Expect(
 			MakeUnloadCommand(spec),
 		).To(
-			Equal([]string{"modprobe", "-rv", "-b", dir, moduleName}),
+			Equal([]string{"modprobe", "-rv", "-d", dir, moduleName}),
 		)
 	})
 

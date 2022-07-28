@@ -337,7 +337,7 @@ func MakeLoadCommand(spec ootov1alpha1.ModprobeSpec) []string {
 	}
 
 	if dirName := spec.DirName; dirName != "" {
-		loadCommand = append(loadCommand, "-b", dirName)
+		loadCommand = append(loadCommand, "-d", dirName)
 	}
 
 	loadCommand = append(loadCommand, spec.ModuleName)
@@ -358,7 +358,7 @@ func MakeUnloadCommand(spec ootov1alpha1.ModprobeSpec) []string {
 	}
 
 	if dirName := spec.DirName; dirName != "" {
-		unloadCommand = append(unloadCommand, "-b", dirName)
+		unloadCommand = append(unloadCommand, "-d", dirName)
 	}
 
 	return append(unloadCommand, spec.ModuleName)
