@@ -5,20 +5,9 @@ metadata:
   name: ooto-ci-build
 spec:
   driverContainer:
-    name: overwritten-anyway
     container:
       modprobe:
         moduleName: ooto_ci_a
-    command:
-      - sh
-      - -c
-      # Wrap inside echo to disable stdout buffering
-      - |
-        echo "secret: $(cat /ci-build-secret)"
-        echo "build arg: $(cat /build-arg)"
-        echo "kernel version: $(cat /kernel-version)"
-        echo "default value: $(cat /default-value)"
-        sleep infinity
       kernelMappings:
         - literal: KVER_CHANGEME
           containerImage: registry.minikube/ooto-kmod:local
